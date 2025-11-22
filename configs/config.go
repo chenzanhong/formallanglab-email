@@ -1,6 +1,8 @@
 package email
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -8,8 +10,14 @@ import (
 	"strconv"
 
 	"github.com/chenzanhong/zlog"
+	"go.uber.org/zap"
 	"go.yaml.in/yaml/v2"
 )
+
+type ServerConfig struct {
+	Port        int `yaml:"port"`
+	MetricsPort int `yaml:"metrics_port"`
+}
 
 type EMAILConfig struct {
 	Name     string `yaml:"email_name"`
@@ -27,6 +35,7 @@ type KafkaConfig struct {
 }
 
 type EmailWorkerConfig struct {
+	Server     ServerConfig      `yaml:"server"`
 	Email      EMAILConfig       `yaml:"email"`
 	SMTPServer SMTPServerConfig  `yaml:"smtp_server"`
 	Kafka      KafkaConfig       `yaml:"kafka"`
@@ -47,15 +56,22 @@ func LoadEmailWorkerConfig() (*EmailWorkerConfig, error) {
 	// 构建到项目根目录的相对路径
 	configPath := filepath.Join(currentDir, "config.yaml")
 
-	yamlFile, err := os.ReadFile(configPath)
-	if err != nil {
-		return nil, err
+	var config EmailWorkerConfig
+	if yamlFile, err := os.ReadFile(configPath); err == nil {
+		if err := yaml.Unmarshal(yamlFile, &config); err != nil {
+			return nil, fmt.Errorf("failed to parse config.yaml: %w", err)
+		}
+	} else {
+		// config.yaml 不存在，使用零值（后续会被环境变量覆盖）
+		zap.L().Info("config.yaml not found, using defaults from environment variables")
 	}
 
-	var config EmailWorkerConfig
-	err = yaml.Unmarshal(yamlFile, &config)
-	if err != nil {
-		return nil, err
+	// 用环境变量覆盖所有字段（必须）
+	ApplyEnvToConfig(&config)
+
+	// 可选：验证必要字段是否已设置
+	if config.Server.MetricsPort == 0 {
+		return nil, fmt.Errorf("required env METRICS_PORT is not set")
 	}
 
 	return &config, nil
@@ -85,6 +101,9 @@ func ApplyEnvToConfig(cfg *EmailWorkerConfig) {
 		}
 		return fallback
 	}
+	// Server
+	cfg.Server.Port = getEnvInt("SERVER_PORT", cfg.Server.Port)
+	cfg.Server.MetricsPort = getEnvInt("METRICS_PORT", cfg.Server.MetricsPort)
 
 	// Email
 	cfg.Email.Name = getEnv("EMAIL_NAME", cfg.Email.Name)
@@ -114,6 +133,20 @@ func ApplyEnvToConfig(cfg *EmailWorkerConfig) {
 	cfg.Zlog.MaxAge = getEnvInt("LOG_MAX_AGE", cfg.Zlog.MaxAge)
 	cfg.Zlog.Compress = getEnvBool("LOG_COMPRESS", cfg.Zlog.Compress)
 	cfg.Zlog.Sampling = getEnvBool("LOG_SAMPLING", cfg.Zlog.Sampling)
+	cfg.Zlog.Fields = parseLogFields()
+}
+
+func parseLogFields() map[string]string {
+	raw := os.Getenv("LOG_FIELDS")
+	if raw == "" {
+		return map[string]string{"server": "email"} // 默认值
+	}
+	var fields map[string]string
+	if err := json.Unmarshal([]byte(raw), &fields); err != nil {
+		log.Printf("Invalid LOG_FIELDS, using default: %v", err)
+		return map[string]string{"server": "email"}
+	}
+	return fields
 }
 
 func SetEmailEnvVariables(config *EmailWorkerConfig) {
@@ -123,6 +156,9 @@ func SetEmailEnvVariables(config *EmailWorkerConfig) {
 			os.Setenv(envVar, fallback)
 		}
 	}
+
+	setEnvIfNotSet("SERVER_PORT", strconv.Itoa(config.Server.Port))
+	setEnvIfNotSet("METRICS_PORT", strconv.Itoa(config.Server.MetricsPort))
 
 	// Email
 	setEnvIfNotSet("EMAIL_NAME", config.Email.Name)

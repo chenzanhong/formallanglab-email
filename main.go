@@ -12,7 +12,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net/http"
+
+	// "net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
@@ -26,7 +27,7 @@ import (
 	"email/model"
 
 	"github.com/chenzanhong/zlog"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	// "github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/segmentio/kafka-go"
 	"gopkg.in/gomail.v2"
 )
@@ -36,7 +37,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("加载配置失败：%v", err.Error())
 	}
-	cf.ApplyEnvToConfig(config)
 	zlog.InitLogger(config.Zlog)
 	cf.SetEmailEnvVariables(config)
 	metrics.PrometheusRegister()
@@ -48,16 +48,35 @@ func main() {
 		Topic:   config.Kafka.Topic,
 		GroupID: "email-service-group",
 	})
-	fmt.Println(os.Getenv("KAFKA_TOPIC"))
+	fmt.Println(config.Kafka.Topic)
+
+	// go func() {
+	// 	if v, ok := os.LookupEnv("SERVER_PORT"); ok {
+	// 		fmt.Println("----- SERVER_PORT: ", v, " -----")
+	// 		mux := http.NewServeMux()
+	// 		mux.HandleFunc("/gdesign/master/health", func(w http.ResponseWriter, r *http.Request) {
+	// 			w.Header().Set("Content-Type", "application/json")
+	// 			w.WriteHeader(http.StatusOK)
+	// 			w.Write([]byte(`{"status":"ok"}`))
+	// 		})
+	// 		http.ListenAndServe(fmt.Sprintf(":%s", v), mux)
+	// 	} else {
+	// 		zlog.Fatal("SERVER_PORT is required")
+	// 	}
+	// }()
 
 	// 启动 Prometheus metrics server
-	go func() {
-		http.Handle("/gdesign/email/metrics", promhttp.Handler())
-		zlog.Info("Prometheus metrics server starting on :4002")
-		if err := http.ListenAndServe(":4002", nil); err != nil && err != http.ErrServerClosed {
-			zlog.Fatalf("Metrics server failed: %v", err)
-		}
-	}()
+	// go func() {
+	// 	if v, ok := os.LookupEnv("METRICS_PORT"); ok {
+	// 		fmt.Println("----- METRICS_PORT: ", v, " -----")
+	// 		mux := http.NewServeMux()
+	// 		mux.Handle("/gdesign/email/metrics", promhttp.Handler())
+	// 		zlog.Info("Prometheus metrics server starting on :" + v)
+	// 		if err := http.ListenAndServe(fmt.Sprintf(":%s", v), mux); err != nil && err != http.ErrServerClosed {
+	// 			zlog.Fatalf("Metrics server failed: %v", err)
+	// 		}
+	// 	}
+	// }()
 
 	// 应用 trace
 	go func() {
@@ -71,12 +90,13 @@ func main() {
 	}()
 
 	// 启动pprof http服务
-	go func() {
-		if os.Getenv("PPROF_PORT") != "0" {
-			zlog.Infow("Starting pprof on localhost:", os.Getenv("PPROF_PORT"))
-			http.ListenAndServe(fmt.Sprintf("localhost:%s", os.Getenv("PPROF_PORT")), nil)
-		}
-	}()
+	// go func() {
+	// 	if v, ok := os.LookupEnv("PPROF_PORT"); ok {
+	// 		fmt.Println("----- PPROF_PORT: ", v, " -----")
+	// 		zlog.Infof("Starting pprof on localhost:%s", v)
+	// 		http.ListenAndServe(fmt.Sprintf("localhost:%s", v), nil)
+	// 	}
+	// }()
 
 	// 优雅关闭
 	ctx, cancel := context.WithCancel(context.Background())
@@ -110,7 +130,7 @@ func main() {
 			}
 
 			var event model.KafkaEmailEvent
-			if err := json.Unmarshal(msg.Value, &event); err != nil {
+			if err = json.Unmarshal(msg.Value, &event); err != nil {
 				zlog.Infof("Failed to unmarshal email event: %v", err)
 				continue
 			}
