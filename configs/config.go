@@ -133,18 +133,27 @@ func ApplyEnvToConfig(cfg *EmailWorkerConfig) {
 	cfg.Zlog.MaxAge = getEnvInt("LOG_MAX_AGE", cfg.Zlog.MaxAge)
 	cfg.Zlog.Compress = getEnvBool("LOG_COMPRESS", cfg.Zlog.Compress)
 	cfg.Zlog.Sampling = getEnvBool("LOG_SAMPLING", cfg.Zlog.Sampling)
-	cfg.Zlog.Fields = parseLogFields()
+	override := parseLogFieldsFromEnv()
+	if override != nil {
+		// 合并：保留 cfg.Log.Fields 已有字段，用 override 覆盖/新增
+		if cfg.Zlog.Fields == nil {
+			cfg.Zlog.Fields = make(map[string]string)
+		}
+		for k, v := range override {
+			cfg.Zlog.Fields[k] = v
+		}
+	}
 }
 
-func parseLogFields() map[string]string {
+func parseLogFieldsFromEnv() map[string]string {
 	raw := os.Getenv("LOG_FIELDS")
 	if raw == "" {
-		return map[string]string{"server": "email"} // 默认值
+		return nil // 或空 map
 	}
 	var fields map[string]string
 	if err := json.Unmarshal([]byte(raw), &fields); err != nil {
-		log.Printf("Invalid LOG_FIELDS, using default: %v", err)
-		return map[string]string{"server": "email"}
+		log.Printf("Invalid LOG_FIELDS, ignoring: %v", err)
+		return nil
 	}
 	return fields
 }

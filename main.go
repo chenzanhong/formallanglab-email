@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"log"
 
-	// "net/http"
+	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
@@ -27,7 +27,7 @@ import (
 	"email/model"
 
 	"github.com/chenzanhong/zlog"
-	// "github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/segmentio/kafka-go"
 	"gopkg.in/gomail.v2"
 )
@@ -50,33 +50,33 @@ func main() {
 	})
 	fmt.Println(config.Kafka.Topic)
 
-	// go func() {
-	// 	if v, ok := os.LookupEnv("SERVER_PORT"); ok {
-	// 		fmt.Println("----- SERVER_PORT: ", v, " -----")
-	// 		mux := http.NewServeMux()
-	// 		mux.HandleFunc("/gdesign/master/health", func(w http.ResponseWriter, r *http.Request) {
-	// 			w.Header().Set("Content-Type", "application/json")
-	// 			w.WriteHeader(http.StatusOK)
-	// 			w.Write([]byte(`{"status":"ok"}`))
-	// 		})
-	// 		http.ListenAndServe(fmt.Sprintf(":%s", v), mux)
-	// 	} else {
-	// 		zlog.Fatal("SERVER_PORT is required")
-	// 	}
-	// }()
+	go func() {
+		if v, ok := os.LookupEnv("SERVER_PORT"); ok {
+			fmt.Println("----- SERVER_PORT: ", v, " -----")
+			mux := http.NewServeMux()
+			mux.HandleFunc("/gdesign/master/health", func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"status":"ok"}`))
+			})
+			http.ListenAndServe(fmt.Sprintf(":%s", v), mux)
+		} else {
+			zlog.Panic("SERVER_PORT is required")
+		}
+	}()
 
 	// 启动 Prometheus metrics server
-	// go func() {
-	// 	if v, ok := os.LookupEnv("METRICS_PORT"); ok {
-	// 		fmt.Println("----- METRICS_PORT: ", v, " -----")
-	// 		mux := http.NewServeMux()
-	// 		mux.Handle("/gdesign/email/metrics", promhttp.Handler())
-	// 		zlog.Info("Prometheus metrics server starting on :" + v)
-	// 		if err := http.ListenAndServe(fmt.Sprintf(":%s", v), mux); err != nil && err != http.ErrServerClosed {
-	// 			zlog.Fatalf("Metrics server failed: %v", err)
-	// 		}
-	// 	}
-	// }()
+	go func() {
+		if v, ok := os.LookupEnv("METRICS_PORT"); ok {
+			fmt.Println("----- METRICS_PORT: ", v, " -----")
+			mux := http.NewServeMux()
+			mux.Handle("/gdesign/email/metrics", promhttp.Handler())
+			zlog.Info("Prometheus metrics server starting on :" + v)
+			if err := http.ListenAndServe(fmt.Sprintf(":%s", v), mux); err != nil && err != http.ErrServerClosed {
+				zlog.Fatalf("Metrics server failed: %v", err)
+			}
+		}
+	}()
 
 	// 应用 trace
 	go func() {
@@ -90,13 +90,13 @@ func main() {
 	}()
 
 	// 启动pprof http服务
-	// go func() {
-	// 	if v, ok := os.LookupEnv("PPROF_PORT"); ok {
-	// 		fmt.Println("----- PPROF_PORT: ", v, " -----")
-	// 		zlog.Infof("Starting pprof on localhost:%s", v)
-	// 		http.ListenAndServe(fmt.Sprintf("localhost:%s", v), nil)
-	// 	}
-	// }()
+	go func() {
+		if v, ok := os.LookupEnv("PPROF_PORT"); ok && v != "" && v != "0" {
+			fmt.Println("----- PPROF_PORT: ", v, " -----")
+			zlog.Infof("Starting pprof on localhost:%s", v)
+			http.ListenAndServe(fmt.Sprintf("localhost:%s", v), nil)
+		}
+	}()
 
 	// 优雅关闭
 	ctx, cancel := context.WithCancel(context.Background())

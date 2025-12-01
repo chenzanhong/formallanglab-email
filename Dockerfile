@@ -50,12 +50,6 @@ COPY --from=builder /app/email-worker /app/
 # 复制配置文件
 COPY configs/config.yaml /app/configs/
 
-# 创建环境变量示例文件
-COPY --chown=emailuser:emailuser .env.example /app/ 
-
-# 依赖 docker-compose 的 volume 挂载或环境变量传入真实配置。
-# COPY --chown=emailuser:emailuser .env /app/ 
-
 # 运行应用
 CMD ["/app/email-worker"]
 
@@ -84,3 +78,6 @@ CMD ["/app/email-worker"]
 #      -v $(pwd)/configs:/app/configs \
 #      -v $(pwd)/logs:/app/logs \
 #      gdesign-email
+
+# docker build -t crpi-tcnuencv1iecgx03.cn-hangzhou.personal.cr.aliyuncs.com/chenzh2004/formallanglab-email .
+# docker push crpi-tcnuencv1iecgx03.cn-hangzhou.personal.cr.aliyuncs.com/chenzh2004/formallanglab-email
