@@ -32,6 +32,9 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
+// 全局熔断器管理器
+var breakerManager *CircuitBreakerManager
+
 func main() {
 	config, err := cf.LoadEmailWorkerConfig()
 	if err != nil {
@@ -40,6 +43,9 @@ func main() {
 	zlog.InitLogger(config.Zlog)
 	cf.SetEmailEnvVariables(config)
 	metrics.PrometheusRegister()
+
+	// 初始化熔断器管理器
+	breakerManager = NewCircuitBreakerManager()
 
 	fmt.Println(config.Kafka.Brokers)
 	brokers := strings.Split(strings.TrimSpace(config.Kafka.Brokers), ",") // 从配置读取
@@ -152,7 +158,19 @@ func sendEmailWithMetrics(event model.KafkaEmailEvent, maxRetries int) error {
 	// 重试机制（可选：指数退避）
 	var err error
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		err = sendEmailSync(event.To, event.Subject, event.ContentType, event.Body)
+		// 使用熔断器包装邮件发送操作
+		_, execErr := breakerManager.ExecuteWithBreaker(breakerManager.GetSMTPBreaker(), func() (interface{}, error) {
+			err = sendEmailSync(event.To, event.Subject, event.ContentType, event.Body)
+			return nil, err
+		})
+
+		if execErr != nil {
+			// 熔断器触发，直接返回错误
+			zlog.Warnw("Circuit breaker tripped for SMTP service", "attempt", attempt, "error", execErr)
+			err = execErr
+			break
+		}
+
 		if err == nil {
 			break
 		}
