@@ -7,7 +7,8 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"email/metrics"
+	"email/middleware/breaker"
+	"email/middleware/metrics"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -33,7 +34,7 @@ import (
 )
 
 // 全局熔断器管理器
-var breakerManager *CircuitBreakerManager
+var breakerManager *breaker.CircuitBreakerManager
 
 func main() {
 	config, err := cf.LoadEmailWorkerConfig()
@@ -45,7 +46,7 @@ func main() {
 	metrics.PrometheusRegister()
 
 	// 初始化熔断器管理器
-	breakerManager = NewCircuitBreakerManager()
+	breakerManager = breaker.NewCircuitBreakerManager()
 
 	fmt.Println(config.Kafka.Brokers)
 	brokers := strings.Split(strings.TrimSpace(config.Kafka.Brokers), ",") // 从配置读取
