@@ -83,6 +83,7 @@ func ApplyEnvToConfig(cfg *EmailWorkerConfig) {
 		if v := os.Getenv(key); v != "" {
 			return v
 		}
+
 		return fallback
 	}
 	getEnvInt := func(key string, fallback int) int {
@@ -91,6 +92,7 @@ func ApplyEnvToConfig(cfg *EmailWorkerConfig) {
 				return i
 			}
 		}
+
 		return fallback
 	}
 	getEnvBool := func(key string, fallback bool) bool {
@@ -99,6 +101,7 @@ func ApplyEnvToConfig(cfg *EmailWorkerConfig) {
 				return b
 			}
 		}
+
 		return fallback
 	}
 	// Server
@@ -155,6 +158,7 @@ func parseLogFieldsFromEnv() map[string]string {
 		log.Printf("Invalid LOG_FIELDS, ignoring: %v", err)
 		return nil
 	}
+
 	return fields
 }
 

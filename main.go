@@ -7,13 +7,10 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"email/middleware/breaker"
-	"email/middleware/metrics"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
-
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -24,9 +21,10 @@ import (
 	"syscall"
 	"time"
 
-	cf "email/configs"
-	"email/model"
-
+	cf "github.com/chenzanhong/formallanglab-email/configs"
+	"github.com/chenzanhong/formallanglab-email/middleware/breaker"
+	"github.com/chenzanhong/formallanglab-email/middleware/metrics"
+	"github.com/chenzanhong/formallanglab-email/model"
 	"github.com/chenzanhong/zlog"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/segmentio/kafka-go"
@@ -121,6 +119,7 @@ func main() {
 		case <-ctx.Done():
 			zlog.Info("Shutting down email worker...")
 			reader.Close()
+
 			return
 		default:
 			// fmt.Println(1)
@@ -133,6 +132,7 @@ func main() {
 					zlog.Warnw("Failed to read message: %v", "error", err)
 				}
 				time.Sleep(2 * time.Second)
+
 				continue
 			}
 
@@ -169,6 +169,7 @@ func sendEmailWithMetrics(event model.KafkaEmailEvent, maxRetries int) error {
 			// 熔断器触发，直接返回错误
 			zlog.Warnw("Circuit breaker tripped for SMTP service", "attempt", attempt, "error", execErr)
 			err = execErr
+
 			break
 		}
 
@@ -225,9 +226,11 @@ func sendEmailSync(email, subject, contextType, body string) error {
 		} else if strings.Contains(err.Error(), "connection refused") {
 			return errors.New("无法连接 SMTP 服务器，请检查网络或服务器地址")
 		}
+
 		return fmt.Errorf("邮件发送失败: %w", err)
 	}
 
 	zlog.Infow("邮件发送成功", "to", email, "subject", subject)
+
 	return nil
 }

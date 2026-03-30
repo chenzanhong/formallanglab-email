@@ -1,4 +1,4 @@
-module email
+module github.com/chenzanhong/formallanglab-email
 
 go 1.24.0
 
