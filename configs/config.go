@@ -166,7 +166,7 @@ func SetEmailEnvVariables(config *EmailWorkerConfig) {
 	// 辅助函数：如果 envVar 未设置，则用 fallback 值设置它
 	setEnvIfNotSet := func(envVar, fallback string) {
 		if os.Getenv(envVar) == "" {
-			os.Setenv(envVar, fallback)
+			os.Setenv(envVar, fallback) // notlint: errcheck
 		}
 	}
 
