@@ -1,0 +1,28 @@
+server:
+  port: 8084
+  metrics_port: 9094
+
+email:
+  email_name: "your-email@example.com"
+  email_password: "your-email-password"
+
+smtp_server:
+  SMTPServer_host: "smtp.example.com"
+  SMTPServer_port: "587"
+
+kafka:
+  brokers: localhost:9092
+  topic: email-jobs
+
+max_retries: 3
+
+zlog:
+  level: info
+  output: console
+  format: json
+  file_path: logs/app.log
+  max_size: 100
+  max_backups: 5
+  max_age: 30
+  compress: true
+  sampling: false
