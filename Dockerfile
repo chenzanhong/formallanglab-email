@@ -52,32 +52,3 @@ COPY configs/config.yaml /app/configs/
 
 # 运行应用
 CMD ["/app/email-worker"]
-
-# ======================= 使用说明 =======================
-# 1. 构建镜像：
-#    docker build -t gdesign-email .
-#
-# 2. 准备环境：
-#    - 创建.env文件（从.env.example复制并填写实际密钥）
-#    - 确保Kafka服务正在运行
-#
-# 3. 运行容器（方式1：使用环境变量传递敏感信息）：
-#    docker run -d \
-#      --name gdesign-email \
-#      -e KAFKA_BROKERS=host.docker.internal:9092 \
-#      -e EMAIL_NAME=your_email@example.com \
-#      -e EMAIL_PASSWORD=your_email_password \
-#      -e SMTP_SERVER_HOST=smtp.example.com \
-#      -e SMTP_SERVER_PORT=465 \
-#      gdesign-email
-#
-# 4. 运行容器（方式2：使用卷挂载配置文件）：
-#    docker run -d \
-#      --name gdesign-email \
-#      -v $(pwd)/.env:/app/.env \
-#      -v $(pwd)/configs:/app/configs \
-#      -v $(pwd)/logs:/app/logs \
-#      gdesign-email
-
-# docker build -t crpi-tcnuencv1iecgx03.cn-hangzhou.personal.cr.aliyuncs.com/chenzh2004/formallanglab-email .
-# docker push crpi-tcnuencv1iecgx03.cn-hangzhou.personal.cr.aliyuncs.com/chenzh2004/formallanglab-email
