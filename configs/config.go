@@ -66,7 +66,7 @@ func LoadEmailWorkerConfig() (*EmailWorkerConfig, error) {
 		zap.L().Info("config.yaml not found, using defaults from environment variables")
 	}
 
-	// 用环境变量覆盖所有字段（必须）
+	// 用环境变量（如果存在）覆盖所有字段（必须）
 	ApplyEnvToConfig(&config)
 
 	// 可选：验证必要字段是否已设置
