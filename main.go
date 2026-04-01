@@ -99,7 +99,9 @@ func main() {
 		if v, ok := os.LookupEnv("PPROF_PORT"); ok && v != "" && v != "0" {
 			fmt.Println("----- PPROF_PORT: ", v, " -----")
 			zlog.Infof("Starting pprof on localhost:%s", v)
-			http.ListenAndServe(fmt.Sprintf("localhost:%s", v), nil)
+			if err := http.ListenAndServe(fmt.Sprintf("localhost:%s", v), nil); err != nil {
+				zlog.Errorf("failed to start pprof on localhost:%s", v)
+			}
 		}
 	}()
 
@@ -167,6 +169,7 @@ func sendEmailWithMetrics(event model.KafkaEmailEvent, maxRetries int) error {
 		if execErr != nil {
 			zlog.Warnw("Circuit breaker tripped for SMTP service", "attempt", attempt, "error", execErr)
 			err = execErr
+
 			break
 		}
 
@@ -177,8 +180,6 @@ func sendEmailWithMetrics(event model.KafkaEmailEvent, maxRetries int) error {
 		zlog.Warnw("Failed to send email, retrying...", "attempt", attempt, "error", err)
 		if attempt < maxRetries {
 			time.Sleep(time.Duration(1<<uint(attempt-1)) * time.Second)
-		} else {
-			// 可选：发送到死信队列（DLQ），不过验证码一分钟后过期，所以这里不放死信队列，前端用户手动重试
 		}
 	}
 
