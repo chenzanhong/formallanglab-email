@@ -1,4 +1,3 @@
-// backend/cmd/email-worker/main.go
 /*
 	邮件消费者
 */
