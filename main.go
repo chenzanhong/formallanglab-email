@@ -1,5 +1,5 @@
 /*
-	邮件消费者
+邮件消费者
 */
 package main
 
@@ -20,14 +20,15 @@ import (
 	"syscall"
 	"time"
 
-	cf "github.com/chenzanhong/formallanglab-email/configs"
-	"github.com/chenzanhong/formallanglab-email/middleware/breaker"
-	"github.com/chenzanhong/formallanglab-email/middleware/metrics"
-	"github.com/chenzanhong/formallanglab-email/model"
 	"github.com/chenzanhong/zlog"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/segmentio/kafka-go"
 	"gopkg.in/gomail.v2"
+
+	cf "github.com/chenzanhong/formallanglab-email/configs"
+	"github.com/chenzanhong/formallanglab-email/middleware/breaker"
+	"github.com/chenzanhong/formallanglab-email/middleware/metrics"
+	"github.com/chenzanhong/formallanglab-email/model"
 )
 
 // 全局熔断器管理器
@@ -123,9 +124,7 @@ func main() {
 
 			return
 		default:
-			// fmt.Println(1)
 			msg, err := reader.ReadMessage(ctx) // 阻塞读取
-			// fmt.Println(2)
 			if err != nil {
 				if strings.Contains(err.Error(), "failed to open connection") {
 					zlog.Errorw("Kafka connection failed", "topic", config.Kafka.Topic, "error", err)
