@@ -31,7 +31,7 @@ import (
 	"github.com/chenzanhong/formallanglab-email/model"
 )
 
-// 全局熔断器管理器
+// breakerManager 全局熔断器管理器
 var breakerManager *breaker.CircuitBreakerManager
 
 func main() {
@@ -46,18 +46,15 @@ func main() {
 	// 初始化熔断器管理器
 	breakerManager = breaker.NewCircuitBreakerManager()
 
-	fmt.Println(config.Kafka.Brokers)
 	brokers := strings.Split(strings.TrimSpace(config.Kafka.Brokers), ",") // 从配置读取
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: brokers,
 		Topic:   config.Kafka.Topic,
 		GroupID: "email-service-group",
 	})
-	fmt.Println(config.Kafka.Topic)
 
 	go func() {
 		if v, ok := os.LookupEnv("SERVER_PORT"); ok {
-			fmt.Println("----- SERVER_PORT: ", v, " -----")
 			mux := http.NewServeMux()
 			mux.HandleFunc("/gdesign/master/health", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
@@ -73,7 +70,6 @@ func main() {
 	// 启动 Prometheus metrics server
 	go func() {
 		if v, ok := os.LookupEnv("METRICS_PORT"); ok {
-			fmt.Println("----- METRICS_PORT: ", v, " -----")
 			mux := http.NewServeMux()
 			mux.Handle("/gdesign/email/metrics", promhttp.Handler())
 			zlog.Info("Prometheus metrics server starting on :" + v)
@@ -94,10 +90,9 @@ func main() {
 		}
 	}()
 
-	// 启动pprof http服务
+	// 启动 pprof http 服务
 	go func() {
 		if v, ok := os.LookupEnv("PPROF_PORT"); ok && v != "" && v != "0" {
-			fmt.Println("----- PPROF_PORT: ", v, " -----")
 			zlog.Infof("Starting pprof on localhost:%s", v)
 			if err := http.ListenAndServe(fmt.Sprintf("localhost:%s", v), nil); err != nil {
 				zlog.Errorf("failed to start pprof on localhost:%s", v)
@@ -192,7 +187,7 @@ func sendEmailWithMetrics(event model.KafkaEmailEvent, maxRetries int) error {
 	return err
 }
 
-// sendEmailSync 是实际的同步发送逻辑
+// sendEmailSync 实际的同步发送逻辑
 func sendEmailSync(email, subject, contentType, body string) error {
 	myEmail := os.Getenv("EMAIL_NAME")
 	myPassword := os.Getenv("EMAIL_PASSWORD")
