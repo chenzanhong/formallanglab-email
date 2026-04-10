@@ -93,7 +93,7 @@ func main() {
 	// 启动 pprof http 服务
 	go func() {
 		if v, ok := os.LookupEnv("PPROF_PORT"); ok && v != "" && v != "0" {
-			zlog.Info("Starting pprof on :"+v)
+			zlog.Info("Starting pprof on :" + v)
 			if err := http.ListenAndServe(":"+v, nil); err != nil {
 				zlog.Errorf("failed to start pprof: %v", err)
 			}
