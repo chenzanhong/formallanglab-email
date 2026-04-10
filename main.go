@@ -93,9 +93,9 @@ func main() {
 	// 启动 pprof http 服务
 	go func() {
 		if v, ok := os.LookupEnv("PPROF_PORT"); ok && v != "" && v != "0" {
-			zlog.Infof("Starting pprof on localhost:%s", v)
-			if err := http.ListenAndServe(fmt.Sprintf("localhost:%s", v), nil); err != nil {
-				zlog.Errorf("failed to start pprof on localhost:%s", v)
+			zlog.Info("Starting pprof on :"+v)
+			if err := http.ListenAndServe(":"+v, nil); err != nil {
+				zlog.Errorf("failed to start pprof: %v", err)
 			}
 		}
 	}()
