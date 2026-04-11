@@ -152,6 +152,15 @@ func main() {
 func sendEmailWithMetrics(event model.KafkaEmailEvent, maxRetries int) error {
 	start := time.Now()
 	var err error
+	defer func() {
+		duration := time.Since(start).Seconds()
+		metrics.ObserveOperationDuration("email", "send", duration)
+		if err != nil {
+			metrics.IncOperation("email", "send", "failure")
+		} else {
+			metrics.IncOperation("email", "send", "success")
+		}
+	}()
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		_, execErr := breakerManager.ExecuteWithBreaker(breakerManager.GetSMTPBreaker(), func() (interface{}, error) {
@@ -174,14 +183,6 @@ func sendEmailWithMetrics(event model.KafkaEmailEvent, maxRetries int) error {
 		if attempt < maxRetries {
 			time.Sleep(time.Duration(1<<uint(attempt-1)) * time.Second)
 		}
-	}
-
-	duration := time.Since(start).Seconds()
-	metrics.ObserveOperationDuration("email", "send", duration)
-	if err != nil {
-		metrics.IncOperation("email", "send", "failure")
-	} else {
-		metrics.IncOperation("email", "send", "success")
 	}
 
 	return err
