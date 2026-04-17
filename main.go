@@ -188,7 +188,7 @@ func sendEmailWithMetrics(event model.KafkaEmailEvent, maxRetries int) error {
 	return err
 }
 
-// sendEmailSync 实际的同步发送逻辑
+// sendEmailSync 实际的同步发送邮件逻辑
 func sendEmailSync(email, subject, contentType, body string) error {
 	myEmail := os.Getenv("EMAIL_NAME")
 	myPassword := os.Getenv("EMAIL_PASSWORD")
