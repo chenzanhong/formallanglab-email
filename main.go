@@ -56,7 +56,7 @@ func main() {
 	go func() {
 		if v, ok := os.LookupEnv("SERVER_PORT"); ok {
 			mux := http.NewServeMux()
-			mux.HandleFunc("/gdesign/master/health", func(w http.ResponseWriter, r *http.Request) {
+			mux.HandleFunc("/formallanglab/master/health", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"status":"ok"}`))
@@ -71,7 +71,7 @@ func main() {
 	go func() {
 		if v, ok := os.LookupEnv("METRICS_PORT"); ok {
 			mux := http.NewServeMux()
-			mux.Handle("/gdesign/email/metrics", promhttp.Handler())
+			mux.Handle("/formallanglab/email/metrics", promhttp.Handler())
 			zlog.Info("Prometheus metrics server starting on :" + v)
 			if err := http.ListenAndServe(fmt.Sprintf(":%s", v), mux); err != nil && err != http.ErrServerClosed {
 				zlog.Fatalf("Metrics server failed: %v", err)
